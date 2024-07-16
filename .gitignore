@@ -1,0 +1,4 @@
+/.venv/
+/.env
+/google.json
+/credentials.json
