@@ -1,17 +1,14 @@
 import requests
 from io import BytesIO
-from typing import List, Union
 from langchain.retrievers.self_query.base import SelfQueryRetriever
 from langchain.chains.query_constructor.base import AttributeInfo
 from langchain.memory import ConversationTokenBufferMemory
-from milvus import default_server as milvus_server
 
 from .database import Database
 from .ai_services import process_with_ai
-from config.config import config
 from langchain_community.document_loaders import PyPDFLoader, TextLoader, UnstructuredHTMLLoader, \
     UnstructuredWordDocumentLoader
-from langchain_community.vectorstores import Milvus
+from langchain_community.vectorstores import Chroma
 from langchain_core.output_parsers import StrOutputParser
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -35,11 +32,9 @@ class RAG:
         return ChatOpenAI(model_name="gpt-3.5-turbo", temperature=0.7)
 
     def __set_vector_store(self):
-        milvus_server.start()
-        return Milvus(
+        return Chroma(
             embedding_function=self.embeddings,
-            connection_args={"host": config.MILVUS_HOST, "port": config.MILVUS_PORT},
-            collection_name="personal_documents",
+            persist_directory="./chroma_db"
         )
 
     def __set_retriever(self):

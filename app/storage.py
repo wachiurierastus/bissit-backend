@@ -7,6 +7,7 @@ s3_client = boto3.client('s3',
                          aws_secret_access_key=config.AWS_SECRET_ACCESS_KEY,
                          region_name=config.AWS_DEFAULT_REGION)
 
+
 def upload_to_s3(file_name, object_name=None):
     if object_name is None:
         object_name = file_name
@@ -16,6 +17,7 @@ def upload_to_s3(file_name, object_name=None):
     except NoCredentialsError:
         print("Credentials not available")
         return None
+
 
 def download_from_s3(s3_url, local_filename):
     bucket = s3_url.split('/')[2].split('.')[0]

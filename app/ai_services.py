@@ -9,6 +9,7 @@ credentials = service_account.Credentials.from_service_account_file(config.GOOGL
 tts_client = texttospeech.TextToSpeechClient(credentials=credentials)
 stt_client = speech.SpeechClient(credentials=credentials)
 
+
 def process_with_ai(prompt, model="gpt-3.5-turbo"):
     try:
         response = openai.ChatCompletion.create(
@@ -20,7 +21,8 @@ def process_with_ai(prompt, model="gpt-3.5-turbo"):
         print(f"An error occurred: {e}")
         return None
 
-def text_to_speech(text):
+
+def text_to_speech(text: str) -> bytes:
     synthesis_input = texttospeech.SynthesisInput(text=text)
     voice = texttospeech.VoiceSelectionParams(
         language_code="en-US",

@@ -15,8 +15,14 @@ db = Database()
 rag = RAG()
 
 
+@app.get("/")
+async def root():
+    return {"Hello": "World"}
+
+
 @app.post("/doc")
 async def upload_document(file: UploadFile = File(...)):
+    # TODO - Make sure it integrates well; otherwise do a mongodb upload.
     try:
         contents = await file.read()
         file_id = db.save_document(file.filename, contents)
@@ -34,16 +40,18 @@ async def upload_document(file: UploadFile = File(...)):
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-#TODO Update this to read from env and S3
+
+# TODO Update this to read from env and S3
 @app.post("/sing")
 async def tts_endpoint(text_input: TextInput):
+    print(text_input)
     try:
         audio_content = text_to_speech(text_input.text)
         filename = f"{uuid.uuid4()}.mp3"
         with open(filename, "wb") as out:
             out.write(audio_content)
 
-        s3_url = upload_to_s3(filename, 'your-s3-bucket-name')
+        s3_url = upload_to_s3(filename, filename)
 
         os.remove(filename)
 
@@ -58,7 +66,7 @@ async def tts_endpoint(text_input: TextInput):
 @app.post("/listen")
 async def stt_endpoint(audio_input: AudioInput):
     try:
-        local_filename = 'temp_audio.wav'
+        local_filename = 'temp_audio.mp3'
         download_from_s3(audio_input.audio_url, local_filename)
 
         with open(local_filename, "rb") as audio_file:
