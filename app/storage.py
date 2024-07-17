@@ -19,7 +19,7 @@ def upload_to_s3(file_name, object_name=None):
         return None
 
 
-def download_from_s3(s3_url, local_filename):
+async def download_from_s3(s3_url, local_filename):
     bucket = s3_url.split('/')[2].split('.')[0]
     object_name = '/'.join(s3_url.split('/')[3:])
     s3_client.download_file(bucket, object_name, local_filename)

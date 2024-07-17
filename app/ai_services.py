@@ -1,3 +1,5 @@
+from http.client import HTTPException
+
 import openai
 from google.cloud import texttospeech, speech
 from google.oauth2 import service_account
@@ -38,6 +40,7 @@ def text_to_speech(text: str) -> bytes:
 
     return response.audio_content
 
+
 def speech_to_text(audio_content):
     audio = speech.RecognitionAudio(content=audio_content)
     config = speech.RecognitionConfig(
@@ -45,6 +48,10 @@ def speech_to_text(audio_content):
         sample_rate_hertz=16000,
         language_code="en-US",
     )
-
     response = stt_client.recognize(config=config, audio=audio)
+
+    # Check if the response contains results and alternatives
+    if not response.results or not response.results[0].alternatives:
+        raise HTTPException(status_code=400, detail="No speech detected in audio file.")
+
     return response.results[0].alternatives[0].transcript

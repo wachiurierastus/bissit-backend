@@ -1,5 +1,6 @@
 import uuid
 
+import aiohttp
 from fastapi import FastAPI, File, UploadFile, HTTPException
 from fastapi.responses import JSONResponse
 from .models import TextInput, AudioInput
@@ -9,6 +10,7 @@ from .ai_services import process_with_ai, text_to_speech, speech_to_text
 from .storage import upload_to_s3, download_from_s3
 from config.config import config
 import os
+import chardet
 
 app = FastAPI()
 db = Database()
@@ -19,14 +21,37 @@ rag = RAG()
 async def root():
     return {"Hello": "World"}
 
-
-@app.post("/doc")
-async def upload_document(file: UploadFile = File(...)):
-    # TODO - Make sure it integrates well; otherwise do a mongodb upload.
+#Check this code out first before running the tests
+@app.post("/img")
+async def upload_image(file: UploadFile = File(...)):
     try:
         contents = await file.read()
         file_id = db.save_document(file.filename, contents)
 
+        return JSONResponse(content={
+            "message": "Image uploaded successfully",
+            "file_id": str(file_id)
+        }, status_code=200)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+@app.post("/doc")
+async def upload_document(file: UploadFile = File(...)):
+    try:
+        contents = await file.read()
+
+        # Detect the encoding of the file
+        detected_encoding = chardet.detect(contents)['encoding']
+        if not detected_encoding:
+            raise ValueError("Could not detect file encoding.")
+
+        # Convert to UTF-8 if necessary
+        if detected_encoding.lower() != 'utf-8':
+            contents = contents.decode(detected_encoding).encode('utf-8')
+
+        # Save the document in the database
+        file_id = db.save_document(file.filename, contents)
+
+        # Decode contents to UTF-8 string for further processing
         document_text = contents.decode('utf-8')
         ai_response = process_with_ai(f"Analyze this document: {document_text}")
 
@@ -37,6 +62,9 @@ async def upload_document(file: UploadFile = File(...)):
             "file_id": str(file_id),
             "ai_analysis": ai_response
         }, status_code=200)
+
+    except UnicodeDecodeError as e:
+        raise HTTPException(status_code=400, detail=f"File encoding error: {e}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
@@ -63,23 +91,34 @@ async def tts_endpoint(text_input: TextInput):
         raise HTTPException(status_code=500, detail=str(e))
 
 
+
 @app.post("/listen")
 async def stt_endpoint(audio_input: AudioInput):
+    local_filename = 'temp_audio.mp3'
     try:
-        local_filename = 'temp_audio.mp3'
-        download_from_s3(audio_input.audio_url, local_filename)
+        await download_from_s3(audio_input.audio_url, local_filename)
+
+        if not os.path.exists(local_filename):
+            raise HTTPException(status_code=400, detail="Audio file not found after download.")
 
         with open(local_filename, "rb") as audio_file:
             content = audio_file.read()
 
+        if not content:
+            raise HTTPException(status_code=400, detail="Downloaded audio file is empty.")
+
         text = speech_to_text(content)
 
-        os.remove(local_filename)
-
         return JSONResponse(content={"text": text})
+    except aiohttp.ClientError as e:
+        raise HTTPException(status_code=400, detail=f"Error downloading audio file: {e}")
+    except HTTPException as e:
+        raise e
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
+        raise HTTPException(status_code=500, detail=f"Unexpected error: {e}")
+    finally:
+        if os.path.exists(local_filename):
+            os.remove(local_filename)
 
 @app.post("/chat")
 async def chat(text_input: TextInput):
