@@ -131,3 +131,29 @@ class RAG:
             f"Given this context and question: {context}\n\nQuestion: {question}\n\nInitial answer: {answer}\n\nPlease provide a more refined and detailed answer:")
 
         return refined_answer
+
+    def summary(self, question: str) -> str:
+        prompt = ChatPromptTemplate.from_messages([
+            ("system", "You are the perfect assistant; provide a summary of the input text"),
+            MessagesPlaceholder(variable_name="chat_history"),
+            ("user", "{input}"),
+        ])
+
+        output_parser = StrOutputParser()
+        chain = prompt | self.model | output_parser
+
+        context_docs = self.retriever.get_relevant_documents(question)
+        context = "\n\n".join([doc.page_content for doc in context_docs])
+
+        answer = chain.invoke({
+            "input": question,
+            "chat_history": self.chat_history.load_memory_variables({})['history'],
+            "context": context
+        })
+
+        self.chat_history.save_context({"input": question}, {"output": answer})
+
+        refined_answer = process_with_ai(
+            f"Given this context and question: {context}\n\nQuestion: {question}\n\nInitial answer: {answer}\n\nPlease provide a more refined and detailed answer:")
+
+        return refined_answer

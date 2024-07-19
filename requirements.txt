@@ -29,6 +29,7 @@ frozenlist==1.4.1
 fsspec==2024.6.1
 google-api-core==2.19.1
 google-auth==2.32.0
+google-cloud==0.34.0
 google-cloud-speech==2.26.1
 google-cloud-texttospeech==2.16.4
 googleapis-common-protos==1.63.2

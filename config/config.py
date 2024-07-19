@@ -3,6 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 class Config:
     MONGODB_URI = os.getenv('MONGODB_URI')
     OPENAI_API_KEY = os.getenv('OPENAI_API_KEY')
@@ -14,5 +15,11 @@ class Config:
     DOCS_DIR = os.getenv('DOCS_DIR')
     MILVUS_HOST = os.getenv('MILVUS_HOST')
     MILVUS_PORT = int(os.getenv('MILVUS_PORT'))
+    UPLOAD_DIR = os.getenv('UPLOAD_DIR')
+    RAPIDAPI_HOST = os.getenv('RAPIDAPI_HOST')
+    RAPIDAPI_URL = os.getenv('RAPIDAPI_URL')
+    RAPIDAPI_KEY = os.getenv('RAPIDAPI_KEY')
+
+
 
 config = Config()
