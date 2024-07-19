@@ -2,6 +2,7 @@ from pymongo import MongoClient
 from gridfs import GridFS
 from config.config import config
 
+
 class Database:
     def __init__(self):
         self.client = MongoClient(config.MONGODB_URI)
